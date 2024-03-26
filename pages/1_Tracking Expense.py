@@ -3,7 +3,6 @@ import pandas as pd
 from models import Session, Transaction, Split, Person, Merchant
 from datetime import datetime
 from sqlalchemy import text
-from streamlit_searchbox import st_searchbox
 # Initialize a session
 session = Session()
 st.set_page_config(layout="wide")
