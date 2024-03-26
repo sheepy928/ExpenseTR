@@ -1,0 +1,181 @@
+import streamlit as st
+import pandas as pd
+from models import Session, Transaction, Split, Person, Merchant
+from datetime import datetime
+from sqlalchemy import text
+from streamlit_searchbox import st_searchbox
+# Initialize a session
+session = Session()
+st.set_page_config(layout="wide")
+st.title('Bill Tracking App')
+
+
+if 'splits' not in st.session_state:
+    st.session_state.splits = []
+
+# Function to add a new split entry
+def add_split():
+    st.session_state.splits.append({'name': '', 'amount': 0.0})
+
+# Function to remove a split entry
+def remove_split(index):
+    if index < len(st.session_state.splits):
+        del st.session_state.splits[index]
+
+# Ensure there's always at least one split entry
+if len(st.session_state.splits) == 0:
+    add_split()
+
+
+col1, col2 = st.columns([6, 4])
+
+
+def delete_transaction_by_row(row):
+    transaction_id = st.session_state.transactions_data[row]['ID']
+    # using ORM
+    # transaction = session.query(Transaction).get(transaction_id)
+    # session.delete(transaction)
+    # using prepared statement
+    statement = text("DELETE FROM transactions WHERE id = :id")
+    session.execute(statement, {"id": transaction_id})
+    session.commit()
+
+def get_or_create_person(name):
+    person = session.query(Person).filter_by(name=name).first()
+    if not person:
+        person = Person(name=name)
+        session.add(person)
+        session.commit()
+    return person
+
+def load_transactions_into_ss():
+    transactions = session.query(Transaction).all()
+    data = [{
+        "ID": transaction.id,
+        "Merchant Name": session.query(Merchant).get(transaction.merchant_id).name,
+        "Amount": transaction.amount,
+        "Date": transaction.date,
+        "Purchaser": session.query(Person).get(transaction.purchaser_id).name
+    } for transaction in transactions]
+    if 'transactions_data' not in st.session_state:
+        st.session_state.transactions_data = data
+
+load_transactions_into_ss()
+
+# Function to load splits into a DataFrame
+def load_splits(transaction_id):
+    splits = session.query(Split).filter_by(transaction_id=transaction_id).all()
+    data = [{
+        "ID": split.id,
+        "Name": split.name,
+        "Amount": split.amount
+    } for split in splits]
+    return pd.DataFrame(data)
+
+def search_purchaser(query):
+    persons = session.query(Person).filter(Person.name.like(f"%{query}%")).all()
+    return [person.name for person in persons]
+
+with col2:
+    with st.expander("Add Transaction", expanded=True):
+        cols_basics=st.columns([2.5,  1])
+        with cols_basics[0]:
+            # merchant_name = st.text_input('Merchant Name')
+            merchants = session.query(Merchant).all()
+            merchant_name = st.selectbox(
+                'Merchant Name',
+                options=[""] + [merchant.name for merchant in merchants],
+                index=0
+            )
+
+        with cols_basics[1]:
+            date = st.date_input('Date')
+        
+        st.divider()
+
+        cols_purchaser = st.columns([1.2, 1])
+
+        with cols_purchaser[0]:
+            persons = session.query(Person).all()
+            purchaser_name = st.selectbox(
+                'Purchaser',
+                options=[''] + [person.name for person in persons],
+                index=0
+            )
+        with cols_purchaser[1]:
+            amount = st.number_input('Amount', key='trans_amount', step=0.01)
+        #     new_purchaser = st.text_input('Or enter new purchaser name')
+
+
+        if purchaser_name:
+            purchaser = get_or_create_person(purchaser_name)
+
+
+
+        st.divider()
+        for i, split in enumerate(st.session_state.splits):
+            cols = st.columns([1, 1, 1])  # Adjust the layout as needed
+            with cols[0]:
+                # st.session_state.splits[i]['name'] = st.text_input(f"Person {i+1}", key=f"name_{i}")
+                st.session_state.splits[i]['name'] = st.selectbox(
+                    f"Person {i+1}",
+                    options=[''] + [person.name for person in session.query(Person).all()],
+                    index=0
+                )
+            with cols[1]:
+                st.session_state.splits[i]['amount'] = st.number_input(f"Amount {i+1}", min_value=0.0, key=f"amount_{i}")
+            with cols[2]:
+                st.button("Remove", key=f"remove_{i}", on_click=remove_split, args=(i,))
+        
+        st.button("Add another split", on_click=add_split)
+        st.divider()
+        selected_transaction_id = st.empty()
+    
+        # Add transaction
+        if st.button('Add Transaction'):
+            if not merchant_name or not purchaser_name or not amount or not date:
+                st.error('Please fill in all fields')
+            else:
+                merchant_id = session.query(Merchant).filter_by(name=merchant_name).first().id
+
+                new_transaction = Transaction(merchant_id=merchant_id,
+                                            amount=float(amount),
+                                            date=datetime.strptime(date.isoformat(), '%Y-%m-%d'),
+                                            purchaser_id=purchaser.id)
+                session.add(new_transaction)
+                session.commit()
+                
+                for split in st.session_state.splits:
+                    person = get_or_create_person(split['name'])  # Assuming this function is defined
+                    new_split = Split(transaction_id=new_transaction.id,
+                                    person_id=person.id,
+                                    amount=split['amount'])
+                    session.add(new_split)
+                session.commit()
+                # if split_name and split_amount:
+                #     new_split = Split(name=split_name, amount=float(split_amount), transaction=new_transaction)
+                #     session.add(new_split)
+                #     session.commit()
+                load_transactions_into_ss()
+                st.success('Transaction added successfully!')
+                st.session_state['transactions'] 
+
+with col1:
+    load_transactions_into_ss()
+    st.write('## Transactions')
+    st.data_editor(st.session_state.transactions_data,
+                   key='transactions',
+                   num_rows='dynamic', width=800, height=400)
+    st.write(st.session_state["transactions"])
+
+    deleted_rows = st.session_state["transactions"]["deleted_rows"]
+
+
+    if deleted_rows:
+        for row in deleted_rows:
+            delete_transaction_by_row(row)
+
+        st.session_state["transactions"]["deleted_rows"] = []
+        load_transactions_into_ss()
+
+    
