@@ -39,7 +39,7 @@ col1, col2 = st.columns([6, 4])
 
 
 def delete_transaction_by_row(row):
-    transaction_id = st.session_state.transactions_data[row]['ID']
+    transaction_id = st.session_state.transactions_data_main_page[row]['ID']
     # using ORM
     # transaction = session.query(Transaction).get(transaction_id)
     # session.delete(transaction)
@@ -65,8 +65,8 @@ def load_transactions_into_ss():
         "Date": transaction.date,
         "Purchaser": session.query(Person).get(transaction.purchaser_id).name
     } for transaction in transactions]
-    if 'transactions_data' not in st.session_state or st.session_state.get('on_change_reload'):
-        st.session_state.transactions_data = data
+    if 'transactions_data_main_page' not in st.session_state or st.session_state.get('on_change_reload'):
+        st.session_state.transactions_data_main_page = data
         st.session_state.on_change_reload = False
 
 def on_delete_button_click(transaction_id):
@@ -116,7 +116,7 @@ with col2:
         with cols_purchaser[0]:
             persons = session.query(Person).all()
             purchaser_name = st.selectbox(
-                'Purchaser',
+                'Payer',
                 options=[''] + [person.name for person in persons],
                 index=0,
                 key="add_purchase_name"
@@ -299,7 +299,7 @@ with col2:
 with col1:
     load_transactions_into_ss()
     st.write('## Transactions')
-    # st.data_editor(st.session_state.transactions_data,
+    # st.data_editor(st.session_state.transactions_data_main_page,
     #                key='transactions',
     #                num_rows='dynamic', width=800, height=400)
 
@@ -326,13 +326,13 @@ with col1:
 
     
 
-    for i, transaction in enumerate(st.session_state.transactions_data):
+    for i, transaction in enumerate(st.session_state.transactions_data_main_page):
         col_id, col_merchant, col_amount, col_date, col_purchaser, col_edit, col_delete = st.columns([1, 1, 1, 1, 1, 1, 1])
         col_id.write(transaction['ID'])
         col_merchant.write(transaction['Merchant Name'])
         col_amount.write(transaction['Amount'])
         col_date.write(transaction['Date'])
-        col_purchaser.write(transaction['Payer'])
+        col_purchaser.write(transaction['Purchaser']) 
         col_edit.button('Edit', key=f"edit_{transaction['ID']}", on_click=on_edit_button_click, args=(transaction['ID'],))
         col_delete.button('Delete', key=f"delete_{transaction['ID']}", on_click=on_delete_button_click, args=(transaction['ID'],))
 

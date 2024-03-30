@@ -182,5 +182,5 @@ with left_column:
     button_text = "foo", "bar", "foo"
     pairs = zip(button_text, st.columns(len(button_text)))
 
-
-    st.write(st.session_state)
+    if st.session_state.IS_DEBUG:
+        st.write(st.session_state)

@@ -60,9 +60,21 @@ load_transactions_into_ss(start_date, end_date, person, merchant, purchaser)
 with main_left:
     st.subheader('Transactions')
     st.dataframe(st.session_state.transactions_data)
-    st.write(st.session_state.transactions_data)
+    if st.session_state.IS_DEBUG:
+        st.write(st.session_state.transactions_data)
 
 with main_right:
+    st.subheader('Summary')
+    # display total amount
+    total_amount = sum([transaction.amount for transaction in st.session_state.transactions])
+    num_different_merchants = len(set([transaction.merchant_id for transaction in st.session_state.transactions]))
+    st.markdown(f"""
+                From  **{start_date}** to **{end_date}**:
+                - There are **{len(st.session_state.transactions_data)}** transactions, including **{num_different_merchants}** different merchants
+                - Total amount is **${total_amount:.2f}**""")
+
+
+    st.divider()
     # pie chart by merchant
     st.subheader("Visualizations")
 
@@ -81,7 +93,8 @@ with main_right:
         fig = px.pie(values=list(merchant_data.values()), names=list(merchant_data.keys()), title='Pie chart by merchant', width=400, height=400)
         st.plotly_chart(fig)
 
-        st.write(merchant_data)
+        if st.session_state.IS_DEBUG:
+            st.write(merchant_data)
 
     # pie chart by purchaser
     with inner_right:
@@ -95,4 +108,5 @@ with main_right:
         fig = px.pie(values=list(purchaser_data.values()), names=list(purchaser_data.keys()), title='Pie chart by payer', width=400, height=400)
         st.plotly_chart(fig)
 
-        st.write(purchaser_data)
+        if st.session_state.IS_DEBUG:
+            st.write(purchaser_data)

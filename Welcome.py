@@ -1,5 +1,10 @@
 import streamlit as st
 
+import os
+if os.environ.get("STREAMLIT_SERVER_DEBUG"):
+    st.session_state['IS_DEBUG'] = True
+else:
+    st.session_state['IS_DEBUG'] = False
 st.set_page_config(
     page_title="CS 348 Project",
     page_icon="👋",
