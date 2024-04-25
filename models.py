@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, create_engine, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from dataclasses import dataclass
@@ -46,6 +46,11 @@ class Transaction(Base):
                           cascade="all, delete, delete-orphan")
     def __str__(self):
         return f"{self.id}: {self.merchant.name} - {self.amount} - {self.date} - {self.purchaser.name}"
+    
+    Index('transaction_date_index', date)
+    Index('transaction_merchant_id_index', merchant_id)
+
+
 class Merchant(Base):
     __tablename__ = 'merchants'
 
