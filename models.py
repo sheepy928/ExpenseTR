@@ -20,8 +20,8 @@ class Item(Base):
 class TransactionList(Base):
     __tablename__ = 'transaction_list'
     id = Column(Integer, primary_key=True)
-    transaction_id = Column(Integer, ForeignKey('transactions.id'))
-    item_id = Column(Integer, ForeignKey('items.id'))
+    transaction_id = Column(Integer, ForeignKey('transactions.id', ondelete="CASCADE"))
+    item_id = Column(Integer, ForeignKey('items.id', ondelete="CASCADE"))
     price = Column(Float)
     # Relationships
     transaction = relationship("Transaction", back_populates="items")
@@ -33,10 +33,10 @@ class Transaction(Base):
     __tablename__ = 'transactions'
     
     id = Column(Integer, primary_key=True)
-    merchant_id = Column(Integer, ForeignKey('merchants.id'))
+    merchant_id = Column(Integer, ForeignKey('merchants.id', ondelete="CASCADE"))
     amount = Column(Float)
     date = Column(Date)
-    purchaser_id = Column(Integer, ForeignKey('persons.id'))
+    purchaser_id = Column(Integer, ForeignKey('persons.id', ondelete="CASCADE"))
 
     merchant = relationship("Merchant")
     purchaser = relationship("Person", back_populates="transactions")
@@ -63,8 +63,8 @@ class Split(Base):
     __tablename__ = 'splits'
     
     id = Column(Integer, primary_key=True)
-    transaction_id = Column(Integer, ForeignKey('transactions.id'))
-    person_id = Column(Integer, ForeignKey('persons.id'))
+    transaction_id = Column(Integer, ForeignKey('transactions.id', ondelete="CASCADE"))
+    person_id = Column(Integer, ForeignKey('persons.id', ondelete="CASCADE"))
     amount = Column(Float)
 
     transaction = relationship("Transaction", back_populates="splits")
