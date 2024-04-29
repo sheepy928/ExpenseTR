@@ -121,7 +121,14 @@ with st.expander("Merchant Management", expanded=True):
 
             st.subheader("Delete Merchant")
             delete_merchant_id = st.selectbox("Merchant ID", options=[merchant["ID"] for merchant in merchant_data], key="delete_merchant_id")
-            st.button("Delete", key="delete_merchant", on_click=delete_merchant_by_id, args=(delete_merchant_id,))
+            # check if the merchant has any transactions
+            merchant = session.query(Merchant).get(delete_merchant_id)
+            # query all transactions with this merchant
+            transactions = session.query(Transaction).filter_by(merchant_id=delete_merchant_id).all()
+            if transactions:
+                st.warning("This merchant has transactions. Please delete the transactions first.")
+            else:
+                st.button("Delete", key="delete_merchant", on_click=delete_merchant_by_id, args=(delete_merchant_id,))
 
         st.subheader("Edit Merchant")
         inner_cols2 = st.columns([3, 1, 3])
@@ -211,7 +218,13 @@ with st.expander("People Management", expanded=True):
                 
                 st.subheader("Delete Person")
                 delete_person_id = st.selectbox("Person ID", options=[person["ID"] for person in person_data], key="delete_person_id")
-                st.button("Delete", key="delete_person", on_click=delete_person_by_id, args=(delete_person_id,))
+                # check if the person has any transactions
+                person = session.query(Person).get(delete_person_id)
+                # check if the person is in any splits
+                if person.transactions or person.splits:
+                    st.warning("This person has transactions or splits. Please delete the transactions or splits first.")
+                else:
+                    st.button("Delete", key="delete_person", on_click=delete_person_by_id, args=(delete_person_id,))
 
         st.divider()
 
