@@ -40,21 +40,26 @@ col1, col2 = st.columns([6, 4])
 
 def delete_transaction_by_row(row):
     transaction_id = st.session_state.transactions_data_main_page[row]['ID']
-    # using ORM
-    # transaction = session.query(Transaction).get(transaction_id)
-    # session.delete(transaction)
-    # using prepared statement
     statement = text("DELETE FROM transactions WHERE id = :id")
-    session.execute(statement, {"id": transaction_id})
-    session.commit()
+    try:
+        session.execute(statement, {"id": transaction_id})
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error: {e}")
 
 def get_or_create_person(name):
-    person = session.query(Person).filter_by(name=name).first()
-    if not person:
-        person = Person(name=name)
-        session.add(person)
-        session.commit()
-    return person
+    try:
+        person = session.query(Person).filter_by(name=name).first()
+        if not person:
+            person = Person(name=name)
+            session.add(person)
+            session.commit()
+            return person
+        return person
+    except Exception as e:
+        session.rollback()
+        st.error(f"Error: {e}")
 
 def load_transactions_into_ss():
     transactions = session.query(Transaction).all()
